@@ -103,8 +103,20 @@ func Start() {
 					db.DB.Model(&db.Email{}).Count(&emailCount)
 					
 					Client.PostMessage(ev.Channel, 
-						slack.MsgOptionText(fmt.Sprintf("📊 *Email Stats*\n\n📬 Total addresses created: %d\n✅ Currently active: %d\n📨 Total emails received: %d", totalCount, activeCount, emailCount), false),
+						slack.MsgOptionText("Email Statistics", false),
 						slack.MsgOptionTS(ev.TimeStamp),
+						slack.MsgOptionBlocks(
+							slack.NewSectionBlock(
+								slack.NewTextBlockObject(
+									slack.MarkdownType,
+									fmt.Sprintf("*Statistics*\n\n*Total Addresses:* %d\n*Active Now:* %d\n*Emails Received:* %d", totalCount, activeCount, emailCount),
+									false,
+									false,
+								),
+								nil,
+								nil,
+							),
+						),
 					)
 				} else if ev.SubType == "" && topLevelMessage(ev) && strings.Contains(strings.ToLower(ev.Text), "gib email") {
 					// Parse custom duration and name from message
@@ -168,12 +180,21 @@ func Start() {
 
 					Client.PostMessage(
 						ev.Channel,
-						slack.MsgOptionText(fmt.Sprintf(`wahoo! your temporary %s email address is %s@%s
-						
-to stop receiving emails, delete your 'gib email' message.
-
-i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv("DOMAIN")), false),
+						slack.MsgOptionText(fmt.Sprintf("Temporary %s email address created", durationText), false),
 						slack.MsgOptionTS(ev.TimeStamp),
+						slack.MsgOptionBlocks(
+							slack.NewSectionBlock(
+								slack.NewTextBlockObject(
+									slack.MarkdownType,
+									fmt.Sprintf("*✓ Email Address Created*\n\n`%s@%s`\n\n*Duration:* %s\n*Expires:* %s", address, os.Getenv("DOMAIN"), durationText, time.Now().Add(duration).Format("Jan 2, 3:04 PM")),
+									false,
+									false,
+								),
+								nil,
+								nil,
+							),
+							slack.NewContextBlock("", slack.NewTextBlockObject(slack.MarkdownType, "Emails will appear in this thread. Delete this message to deactivate.", false, false)),
+						),
 					)
 
 					email := db.Address{
@@ -186,7 +207,7 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 
 					db.DB.Create(&email)
 				} else if ev.SubType == "" && topLevelMessage(ev) && strings.HasPrefix(strings.ToLower(ev.Text), "gib ") {
-					Client.PostMessage(ev.Channel, slack.MsgOptionText(fmt.Sprintf("unfortunately i am unable to _\"gib %s\"_. maybe try _\"gib email\"_?", strings.TrimPrefix(strings.ToLower(ev.Text), "gib ")), false), slack.MsgOptionTS(ev.TimeStamp))
+					Client.PostMessage(ev.Channel, slack.MsgOptionText(fmt.Sprintf("Unknown command. Try: gib email"), false), slack.MsgOptionTS(ev.TimeStamp))
 				} else if (ev.SubType == "message_deleted" || (ev.SubType == "message_changed" && ev.Message.SubType == "tombstone")) && topLevelMessage(ev) {
 					var address db.Address
 					tx := db.DB.Where("timestamp = ? AND expires_at > NOW()", ev.PreviousMessage.TimeStamp).First(&address)
@@ -198,8 +219,20 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 						if tx.Error == nil {
 							Client.PostMessage(
 								os.Getenv("SLACK_CHANNEL"),
-								slack.MsgOptionText(":x: since you deleted your message, this address has been deactivated.", false),
+								slack.MsgOptionText("Address deactivated", false),
 								slack.MsgOptionTS(address.Timestamp),
+								slack.MsgOptionBlocks(
+									slack.NewSectionBlock(
+										slack.NewTextBlockObject(
+											slack.MarkdownType,
+											"*✗ Address Deactivated*\n\nThis address will no longer receive emails.",
+											false,
+											false,
+										),
+										nil,
+										nil,
+									),
+								),
 							)
 						}
 
@@ -250,7 +283,7 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 			}
 
 			if payload.User.ID != address.User {
-				Client.PostEphemeral(os.Getenv("SLACK_CHANNEL"), payload.User.ID, slack.MsgOptionTS(address.Timestamp), slack.MsgOptionText("whatcha tryin' to pull here :face_with_raised_eyebrow:", false))
+				Client.PostEphemeral(os.Getenv("SLACK_CHANNEL"), payload.User.ID, slack.MsgOptionTS(address.Timestamp), slack.MsgOptionText("You can only extend your own addresses.", false))
 				return
 			}
 
@@ -259,7 +292,23 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 
 			db.DB.Save(&address)
 
-			Client.PostMessage(os.Getenv("SLACK_CHANNEL"), slack.MsgOptionTS(address.Timestamp), slack.MsgOptionText("This address will be available for another 24 hours!", false))
+			Client.PostMessage(
+				os.Getenv("SLACK_CHANNEL"),
+				slack.MsgOptionTS(address.Timestamp),
+				slack.MsgOptionText("Address extended", false),
+				slack.MsgOptionBlocks(
+					slack.NewSectionBlock(
+						slack.NewTextBlockObject(
+							slack.MarkdownType,
+							fmt.Sprintf("*✓ Extended*\n\nThis address is now active for another 24 hours.\n*New expiration:* %s", time.Now().Add(24*time.Hour).Format("Jan 2, 3:04 PM")),
+							false,
+							false,
+						),
+						nil,
+						nil,
+					),
+				),
+			)
 			Client.RemoveReaction("clock1", slack.ItemRef{
 				Channel:   os.Getenv("SLACK_CHANNEL"),
 				Timestamp: address.Timestamp,

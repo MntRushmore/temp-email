@@ -128,7 +128,7 @@ func (s *Session) Data(r io.Reader) error {
 		slack.MsgOptionTS(address.Timestamp),
 		slack.MsgOptionBlocks(
 			slack.NewSectionBlock(
-				slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("message from %s\n%s", email.From[0].Address, util.SanitizeInput(subject)), false, false),
+				slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*From:* `%s`\n*%s*", email.From[0].Address, util.SanitizeInput(subject)), false, false),
 				nil,
 				nil,
 			),
@@ -138,8 +138,7 @@ func (s *Session) Data(r io.Reader) error {
 				nil,
 				nil,
 			),
-			slack.NewDividerBlock(),
-			slack.NewContextBlock("", slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("Not rendering properly? Click <%s/%s|here> to view this email in your browser.", os.Getenv("APP_DOMAIN"), savedEmail.ID), false, false)),
+			slack.NewContextBlock("", slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<%s/%s|View in browser>", os.Getenv("APP_DOMAIN"), savedEmail.ID), false, false)),
 		),
 	)
 	if err != nil {
