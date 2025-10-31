@@ -6,4 +6,4 @@ COPY . .
 
 RUN go build .
 
-CMD [ "./temp-email" ]
+CMD ["./temp-email"]
