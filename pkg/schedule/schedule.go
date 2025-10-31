@@ -30,29 +30,17 @@ func Start() {
 			if e.Timestamp != "" {
 				_, _, err := slackevents.Client.PostMessage(
 					os.Getenv("SLACK_CHANNEL"),
-					slack.MsgOptionText("Address expired", false),
+					slack.MsgOptionText(":x: :clock1: it's been 24 hours, so this address will no longer receive mail.", false),
 					slack.MsgOptionTS(e.Timestamp),
 					slack.MsgOptionBlocks(
-						slack.NewDividerBlock(),
-						slack.NewSectionBlock(
-							slack.NewTextBlockObject(
-								slack.MarkdownType,
-								"*⏰ Address Expired*\n\nThis address has reached its expiration time and will no longer receive emails.",
-								false,
-								false,
-							),
-							nil,
-							nil,
-						),
 						slack.NewActionBlock(
 							"reactivate",
 							slack.NewButtonBlockElement(
 								"reactivate",
 								e.ID,
-								slack.NewTextBlockObject(slack.PlainTextType, "Extend for 24 Hours", false, false),
+								slack.NewTextBlockObject(slack.PlainTextType, "Get another 24 hours", false, false),
 							).WithStyle(slack.StylePrimary),
 						),
-						slack.NewDividerBlock(),
 					))
 				if err != nil {
 					fmt.Println(err.Error())
