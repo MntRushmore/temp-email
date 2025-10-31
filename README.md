@@ -9,8 +9,12 @@ Creates disposable 24-hour email addresses on demand, receives emails via SMTP, 
 - 🚀 **On-Demand Email Addresses**: Users request temporary emails with "gib email" in Slack
 - 📬 **Automatic Email Reception**: SMTP server receives emails and posts them to Slack threads
 - 🌐 **Web Viewer**: View full HTML emails in browser via unique links
-- ⏰ **24-Hour Expiration**: Addresses automatically expire after 24 hours
+- ⏰ **Custom Expiration Times**: Set addresses to expire in hours or days (24h, 48h, 3d, etc.)
 - 🔄 **Reactivation**: Users can reactivate expired addresses
+- 📛 **Named Addresses**: Create custom prefixes like "github-xyz@domain.com"
+- 📊 **Usage Statistics**: View stats on addresses created and emails received
+- 🎨 **Beautiful Dashboard**: Modern web interface to manage all your addresses
+- 🔐 **Password Protected**: Simple authentication to prevent abuse
 - 🗄️ **Database Storage**: PostgreSQL stores addresses and emails
 - 🐳 **Docker Ready**: Easy deployment with Docker Compose
 
@@ -125,11 +129,26 @@ SLACK_CHANNEL=C01234567
 DOMAIN=yourdomain.com
 APP_DOMAIN=https://temp.yourdomain.com
 
+# Dashboard Authentication
+DASHBOARD_PASSWORD=your_secure_password_here
+
 # Database Configuration
 DATABASE_URL=postgres://postgres:postgres@db:5432/temp_email
 ```
 
 See [SETUP.md](SETUP.md) for detailed configuration instructions.
+
+### Dashboard Access
+
+Access the dashboard at `https://yourdomain.com/dashboard`
+
+The dashboard allows you to:
+- View statistics on addresses and emails
+- Create new temporary addresses with custom names and durations
+- Manage and delete existing addresses
+- All protected by password authentication
+
+Set your password in `.env` with `DASHBOARD_PASSWORD=your_password`
 
 ## Troubleshooting
 

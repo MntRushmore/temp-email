@@ -33,12 +33,6 @@ func generateToken() string {
 
 func authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip auth if SKIP_AUTH is set (for development)
-		if os.Getenv("SKIP_AUTH") == "true" {
-			c.Next()
-			return
-		}
-
 		token, err := c.Cookie("auth_token")
 		if err != nil || !sessions[token] {
 			c.Redirect(302, "/login")
@@ -279,41 +273,23 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 		c.String(200, getLoginHTML())
 	})
 
-	r.GET("/auth/callback", func(c *gin.Context) {
-		code := c.Query("code")
-		if code == "" {
-			c.String(400, "No code provided")
-			return
-		}
-
-		// Exchange code for token with login.new
-		clientID := os.Getenv("LOGIN_CLIENT_ID")
-		clientSecret := os.Getenv("LOGIN_CLIENT_SECRET")
+	r.POST("/login", func(c *gin.Context) {
+		password := c.PostForm("password")
+		correctPassword := os.Getenv("DASHBOARD_PASSWORD")
 		
-		data := url.Values{}
-		data.Set("grant_type", "authorization_code")
-		data.Set("code", code)
-		data.Set("client_id", clientID)
-		data.Set("client_secret", clientSecret)
-		data.Set("redirect_uri", os.Getenv("APP_DOMAIN") + "/auth/callback")
-
-		resp, err := http.PostForm("https://login.new/oauth/token", data)
-		if err != nil {
-			c.String(500, "Auth failed: " + err.Error())
-			return
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != 200 {
-			c.String(500, "Auth failed")
-			return
+		if correctPassword == "" {
+			correctPassword = "admin" // Default password if not set
 		}
 
-		// Create session
-		token := generateToken()
-		sessions[token] = true
-		c.SetCookie("auth_token", token, 86400*7, "/", "", true, true)
-		c.Redirect(302, "/dashboard")
+		if password == correctPassword {
+			// Create session
+			token := generateToken()
+			sessions[token] = true
+			c.SetCookie("auth_token", token, 86400*7, "/", "", true, true)
+			c.Redirect(302, "/dashboard")
+		} else {
+			c.Redirect(302, "/login?error=1")
+		}
 	})
 
 	r.GET("/logout", func(c *gin.Context) {
@@ -904,10 +880,6 @@ func getDashboardHTML() string {
 }
 
 func getLoginHTML() string {
-	clientID := os.Getenv("LOGIN_CLIENT_ID")
-	redirectURI := os.Getenv("APP_DOMAIN") + "/auth/callback"
-	authURL := fmt.Sprintf("https://login.new/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email", clientID, url.QueryEscape(redirectURI))
-	
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -982,8 +954,36 @@ func getLoginHTML() string {
             font-size: 0.95rem;
         }
 
-        .login-btn {
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
             display: block;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            background: rgba(15, 15, 30, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .login-btn {
             width: 100%;
             background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
             color: white;
@@ -994,8 +994,6 @@ func getLoginHTML() string {
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-decoration: none;
-            text-align: center;
             box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
         }
 
@@ -1006,6 +1004,24 @@ func getLoginHTML() string {
 
         .login-btn:active {
             transform: translateY(0);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
         }
 
         .feature-list {
@@ -1046,9 +1062,23 @@ func getLoginHTML() string {
             <h1>RMail Dashboard</h1>
             <p class="subtitle">Secure access to your temporary email addresses</p>
             
-            <a href="` + authURL + `" class="login-btn">
-                🔐 Sign in with login.new
-            </a>
+            <script>
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('error') === '1') {
+                    document.write('<div class="error">❌ Incorrect password. Please try again.</div>');
+                }
+            </script>
+
+            <form method="POST" action="/login">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required autofocus>
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    🔐 Sign In
+                </button>
+            </form>
 
             <ul class="feature-list">
                 <li>Create temporary email addresses</li>
@@ -1059,7 +1089,7 @@ func getLoginHTML() string {
         </div>
 
         <div class="footer">
-            Secured with login.new
+            Secured dashboard
         </div>
     </div>
 </body>
