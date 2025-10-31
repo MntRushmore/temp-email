@@ -453,7 +453,7 @@ func getDashboardHTML() string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RMail Dashboard</title>
+    <title>TempMail Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -462,101 +462,148 @@ func getDashboardHTML() string {
         }
 
         :root {
-            --bg: #0f0f1e;
-            --bg-secondary: #1a1a2e;
-            --surface: #16213e;
-            --surface-hover: #1e2d50;
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --text: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --success: #10b981;
-            --danger: #ef4444;
-            --border: rgba(148, 163, 184, 0.1);
-            --shadow: rgba(0, 0, 0, 0.3);
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --surface: #ffffff;
+            --surface-hover: #f1f3f5;
+            --primary: #000000;
+            --primary-hover: #1a1a1a;
+            --text: #1a1a1a;
+            --text-secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --border: #dee2e6;
+            --shadow: rgba(0, 0, 0, 0.05);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: var(--bg-secondary);
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
+        .nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
         }
 
-        header {
-            margin-bottom: 3rem;
-            animation: fadeIn 0.6s ease-out;
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--surface-hover);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem 2rem;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text);
             margin-bottom: 0.5rem;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 1.1rem;
+            font-size: 1rem;
+            margin-bottom: 2rem;
         }
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-            animation: fadeIn 0.6s ease-out 0.1s both;
+            grid-template-columns: repeat(auto-fit, minmin(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, var(--surface) 0%, var(--bg-secondary) 100%);
+            background: var(--surface);
             padding: 1.5rem;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--primary);
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 1px 3px var(--shadow);
         }
 
         .stat-label {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.75rem;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
 
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text);
         }
 
         .create-section {
             background: var(--surface);
             padding: 2rem;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            margin-bottom: 3rem;
-            animation: fadeIn 0.6s ease-out 0.2s both;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .section-header p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
         }
 
         .create-form {
@@ -578,57 +625,64 @@ func getDashboardHTML() string {
         }
 
         label {
-            color: var(--text-secondary);
+            color: var(--text);
             font-size: 0.875rem;
             margin-bottom: 0.5rem;
             font-weight: 500;
         }
 
         input, select {
-            background: var(--bg-secondary);
+            background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.875rem 1rem;
+            border-radius: 6px;
+            padding: 0.625rem 0.875rem;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.9375rem;
             transition: all 0.2s;
         }
 
         input:focus, select:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: var(--text);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        input::placeholder {
+            color: #adb5bd;
         }
 
         button {
-            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 0.875rem 2rem;
-            border-radius: 10px;
-            font-weight: 600;
+            padding: 0.625rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 1rem;
+            font-size: 0.9375rem;
             white-space: nowrap;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            background: var(--primary-hover);
         }
 
         button:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         .addresses-section {
-            animation: fadeIn 0.6s ease-out 0.3s both;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            box-shadow: 0 1px 3px var(--shadow);
         }
 
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .addresses-section h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
             margin-bottom: 1.5rem;
             color: var(--text);
         }
@@ -639,30 +693,29 @@ func getDashboardHTML() string {
         }
 
         .address-card {
-            background: var(--surface);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            animation: slideUp 0.4s ease-out backwards;
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
         }
 
         .address-card:hover {
-            border-color: var(--primary);
-            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .address-header {
             display: flex;
             justify-content: space-between;
             align-items: start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .address-email {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 600;
-            color: var(--primary);
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            color: var(--text);
             word-break: break-all;
         }
 
@@ -672,50 +725,55 @@ func getDashboardHTML() string {
         }
 
         .btn-icon {
-            background: var(--bg-secondary);
+            background: transparent;
             border: 1px solid var(--border);
-            padding: 0.5rem;
-            border-radius: 8px;
+            padding: 0.375rem 0.5rem;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 1rem;
         }
 
         .btn-icon:hover {
             background: var(--danger);
             border-color: var(--danger);
+            color: white;
         }
 
         .address-meta {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             flex-wrap: wrap;
         }
 
         .meta-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.375rem;
         }
 
         .badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.025em;
         }
 
         .badge-active {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
         .badge-expired {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         .loading {
@@ -725,12 +783,12 @@ func getDashboardHTML() string {
         }
 
         .spinner {
-            border: 3px solid var(--border);
-            border-top: 3px solid var(--primary);
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 32px;
+            height: 32px;
+            animation: spin 0.8s linear infinite;
             margin: 0 auto 1rem;
         }
 
@@ -739,68 +797,62 @@ func getDashboardHTML() string {
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         .empty-state {
             text-align: center;
-            padding: 4rem 2rem;
+            padding: 3rem 2rem;
             color: var(--text-secondary);
         }
 
         .empty-icon {
-            font-size: 4rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
-            opacity: 0.3;
+            opacity: 0.4;
+        }
+
+        .empty-state p {
+            font-size: 0.9375rem;
         }
     </style>
 </head>
 <body>
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="https://v3b.fal.media/files/b/panda/ifq-LOWzwSDnK0P1EEseI_f6b0255876734a108198875da17b3b77.jpg" alt="TempMail" class="logo-img">
+                <span>TempMail</span>
+            </div>
+            <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
+        </div>
+    </nav>
+
     <div class="container">
-        <header>
-            <h1>📧 RMail Dashboard</h1>
-            <p class="subtitle">Manage your temporary email addresses</p>
-        </header>
+        <h1>Dashboard</h1>
+        <p class="subtitle">Manage your temporary email addresses</p>
 
         <div class="stats" id="stats">
             <div class="stat-card">
-                <div class="stat-label">Total Addresses</div>
+                <div class="stat-label">Total</div>
                 <div class="stat-value" id="totalAddresses">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Active Now</div>
+                <div class="stat-label">Active</div>
                 <div class="stat-value" id="activeAddresses">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Emails Received</div>
+                <div class="stat-label">Emails</div>
                 <div class="stat-value" id="totalEmails">-</div>
             </div>
         </div>
 
         <div class="create-section">
+            <div class="section-header">
+                <h2>Create New Address</h2>
+                <p>Generate a temporary email address</p>
+            </div>
             <form class="create-form" id="createForm">
                 <div class="form-group">
-                    <label for="name">Custom Name (optional)</label>
-                    <input type="text" id="name" placeholder="e.g., github, testing, work">
+                    <label for="name">Custom Name</label>
+                    <input type="text" id="name" placeholder="github, work, testing...">
                 </div>
                 <div class="form-group">
                     <label for="duration">Duration</label>
@@ -811,12 +863,12 @@ func getDashboardHTML() string {
                         <option value="168">7 days</option>
                     </select>
                 </div>
-                <button type="submit">✨ Create Address</button>
+                <button type="submit">Create</button>
             </form>
         </div>
 
         <div class="addresses-section">
-            <h2 class="section-title">Your Addresses</h2>
+            <h2>Email Addresses</h2>
             <div id="addressesList">
                 <div class="loading">
                     <div class="spinner"></div>
@@ -856,29 +908,33 @@ func getDashboardHTML() string {
             const container = document.getElementById('addressesList');
             
             if (addresses.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No addresses yet. Create your first one above!</p></div>';
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No addresses yet. Create one above to get started.</p></div>';
                 return;
             }
             
             const now = new Date();
             container.innerHTML = addresses.map((addr, i) => {
                 const isActive = new Date(addr.ExpiresAt) > now;
-                const created = new Date(addr.CreatedAt).toLocaleString();
-                const expires = new Date(addr.ExpiresAt).toLocaleString();
+                const created = new Date(addr.CreatedAt).toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                });
+                const expires = new Date(addr.ExpiresAt).toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                });
                 
-                return '<div class="address-card" style="animation-delay: ' + (i * 0.05) + 's">' +
+                return '<div class="address-card">' +
                     '<div class="address-header">' +
                         '<div class="address-email">' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + '</div>' +
                         '<div class="address-actions">' +
-                            '<button class="btn-icon" onclick="deleteAddress(\'' + addr.ID + '\')" title="Delete">🗑️</button>' +
+                            '<button class="btn-icon" onclick="deleteAddress(\'' + addr.ID + '\')" title="Delete">×</button>' +
                         '</div>' +
                     '</div>' +
                     '<div class="address-meta">' +
                         '<div class="meta-item">' +
                             '<span class="badge ' + (isActive ? 'badge-active' : 'badge-expired') + '">' + (isActive ? 'Active' : 'Expired') + '</span>' +
                         '</div>' +
-                        '<div class="meta-item">📅 Created: ' + created + '</div>' +
-                        '<div class="meta-item">⏰ Expires: ' + expires + '</div>' +
+                        '<div class="meta-item">Created ' + created + '</div>' +
+                        '<div class="meta-item">Expires ' + expires + '</div>' +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -934,7 +990,7 @@ func getLoginHTML() string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - RMail</title>
+    <title>Login - TempMail</title>
     <style>
         * {
             margin: 0;
@@ -943,64 +999,53 @@ func getLoginHTML() string {
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: #f8f9fa;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #e2e8f0;
         }
 
         .login-container {
             width: 100%;
-            max-width: 420px;
+            max-width: 400px;
             padding: 2rem;
         }
 
         .login-card {
-            background: rgba(22, 33, 62, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .logo {
-            font-size: 3rem;
-            text-align: center;
-            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo img {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
         }
 
         h1 {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 1.5rem;
+            font-weight: 600;
             text-align: center;
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #1a1a1a;
             margin-bottom: 0.5rem;
         }
 
         .subtitle {
             text-align: center;
-            color: #94a3b8;
+            color: #6c757d;
             margin-bottom: 2rem;
-            font-size: 0.95rem;
+            font-size: 0.875rem;
         }
 
         .form-group {
@@ -1009,7 +1054,7 @@ func getLoginHTML() string {
 
         label {
             display: block;
-            color: #94a3b8;
+            color: #1a1a1a;
             font-size: 0.875rem;
             margin-bottom: 0.5rem;
             font-weight: 500;
@@ -1017,128 +1062,81 @@ func getLoginHTML() string {
 
         input[type="password"] {
             width: 100%;
-            background: rgba(15, 15, 30, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 12px;
-            padding: 0.875rem 1rem;
-            color: #e2e8f0;
-            font-size: 1rem;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.625rem 0.875rem;
+            color: #1a1a1a;
+            font-size: 0.9375rem;
             transition: all 0.2s;
         }
 
         input[type="password"]:focus {
             outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
         }
 
         .login-btn {
             width: 100%;
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            background: #000000;
             color: white;
             border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.9375rem;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
         }
 
         .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+            background: #1a1a1a;
         }
 
         .login-btn:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
             padding: 0.75rem 1rem;
-            border-radius: 10px;
+            border-radius: 6px;
             margin-bottom: 1.5rem;
             text-align: center;
             font-size: 0.875rem;
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        .feature-list {
-            list-style: none;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(148, 163, 184, 0.1);
-        }
-
-        .feature-list li {
-            color: #94a3b8;
-            margin-bottom: 0.75rem;
-            padding-left: 1.5rem;
-            position: relative;
-            font-size: 0.9rem;
-        }
-
-        .feature-list li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #10b981;
-            font-weight: bold;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 2rem;
-            color: #64748b;
-            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
-            <div class="logo">📧</div>
-            <h1>RMail Dashboard</h1>
-            <p class="subtitle">Secure access to your temporary email addresses</p>
+            <div class="logo">
+                <img src="https://v3b.fal.media/files/b/panda/ifq-LOWzwSDnK0P1EEseI_f6b0255876734a108198875da17b3b77.jpg" alt="TempMail">
+            </div>
+            <h1>TempMail</h1>
+            <p class="subtitle">Sign in to your dashboard</p>
             
             <script>
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('error') === '1') {
-                    document.write('<div class="error">❌ Incorrect password. Please try again.</div>');
+                    document.write('<div class="error">Incorrect password. Please try again.</div>');
                 }
             </script>
 
             <form method="POST" action="/login">
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required autofocus>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required autofocus>
                 </div>
                 
                 <button type="submit" class="login-btn">
-                    🔐 Sign In
+                    Sign In
                 </button>
             </form>
-
-            <ul class="feature-list">
-                <li>Create temporary email addresses</li>
-                <li>Manage multiple addresses</li>
-                <li>Custom durations and names</li>
-                <li>Real-time email notifications</li>
-            </ul>
-        </div>
-
-        <div class="footer">
-            Secured dashboard
         </div>
     </div>
 </body>
