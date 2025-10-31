@@ -70,8 +70,60 @@ func Start() {
 			innerEvent := eventsAPIEvent.InnerEvent
 			switch ev := innerEvent.Data.(type) {
 			case *slackevents.MessageEvent:
-				if ev.SubType == "" && topLevelMessage(ev) && strings.Contains(strings.ToLower(ev.Text), "gib email") {
-					address := util.GenerateEmailAddress()
+				// Feature 1: Stats command
+				if ev.SubType == "" && topLevelMessage(ev) && strings.Contains(strings.ToLower(ev.Text), "email stats") {
+					var totalCount int64
+					db.DB.Model(&db.Address{}).Count(&totalCount)
+					
+					var activeCount int64
+					db.DB.Model(&db.Address{}).Where("expires_at > NOW()").Count(&activeCount)
+					
+					var emailCount int64
+					db.DB.Model(&db.Email{}).Count(&emailCount)
+					
+					Client.PostMessage(ev.Channel, 
+						slack.MsgOptionText(fmt.Sprintf("📊 *Email Stats*\n\n📬 Total addresses created: %d\n✅ Currently active: %d\n📨 Total emails received: %d", totalCount, activeCount, emailCount), false),
+						slack.MsgOptionTS(ev.TimeStamp),
+					)
+				} else if ev.SubType == "" && topLevelMessage(ev) && strings.Contains(strings.ToLower(ev.Text), "gib email") {
+					// Parse custom duration and name from message
+					text := strings.ToLower(ev.Text)
+					parts := strings.Fields(text)
+					
+					// Default values
+					duration := 24 * time.Hour
+					prefix := ""
+					
+					// Feature 2: Custom duration - check for time specs
+					for _, part := range parts {
+						if strings.HasSuffix(part, "h") {
+							if hours := strings.TrimSuffix(part, "h"); hours != "" {
+								if h, err := time.ParseDuration(hours + "h"); err == nil {
+									duration = h
+								}
+							}
+						} else if strings.HasSuffix(part, "d") {
+							if days := strings.TrimSuffix(part, "d"); days != "" {
+								if d, err := time.ParseDuration(days + "h"); err == nil {
+									duration = d * 24
+								}
+							}
+						}
+					}
+					
+					// Feature 3: Named addresses - check for custom name
+					for i, part := range parts {
+						if part == "email" && i+1 < len(parts) {
+							nextPart := parts[i+1]
+							// Only use as name if it's not a duration specifier
+							if !strings.HasSuffix(nextPart, "h") && !strings.HasSuffix(nextPart, "d") {
+								prefix = nextPart + "-"
+							}
+							break
+						}
+					}
+					
+					address := prefix + util.GenerateEmailAddress()
 
 					err = Client.AddReaction("thumb", slack.ItemRef{
 						Channel:   ev.Channel,
@@ -80,21 +132,33 @@ func Start() {
 					if err != nil {
 						fmt.Println(err)
 					}
+					
+					// Custom message based on duration
+					durationHours := int(duration.Hours())
+					durationText := fmt.Sprintf("%d-hour", durationHours)
+					if durationHours >= 24 {
+						durationDays := durationHours / 24
+						if durationDays == 1 {
+							durationText = "24-hour"
+						} else {
+							durationText = fmt.Sprintf("%d-day", durationDays)
+						}
+					}
 
 					Client.PostMessage(
 						ev.Channel,
-						slack.MsgOptionText(fmt.Sprintf(`wahoo! your temporary 24-hour email address is %s@%s
+						slack.MsgOptionText(fmt.Sprintf(`wahoo! your temporary %s email address is %s@%s
 						
 to stop receiving emails, delete your 'gib email' message.
 
-i'll post emails in this thread :arrow_down:`, address, os.Getenv("DOMAIN")), false),
+i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv("DOMAIN")), false),
 						slack.MsgOptionTS(ev.TimeStamp),
 					)
 
 					email := db.Address{
 						ID:        address,
 						CreatedAt: time.Now(),
-						ExpiresAt: time.Now().Add(24 * time.Hour),
+						ExpiresAt: time.Now().Add(duration),
 						Timestamp: ev.TimeStamp,
 						User:      ev.User,
 					}
