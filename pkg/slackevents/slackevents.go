@@ -1,6 +1,8 @@
 package slackevents
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,6 +23,31 @@ import (
 )
 
 var Client *slack.Client
+var sessions = make(map[string]bool) // Simple session store
+
+func generateToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
+
+func authMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Skip auth if SKIP_AUTH is set (for development)
+		if os.Getenv("SKIP_AUTH") == "true" {
+			c.Next()
+			return
+		}
+
+		token, err := c.Cookie("auth_token")
+		if err != nil || !sessions[token] {
+			c.Redirect(302, "/login")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
 
 func topLevelMessage(ev *slackevents.MessageEvent) bool {
 	return ev.Channel == os.Getenv("SLACK_CHANNEL") && ev.ThreadTimeStamp == ""
@@ -246,25 +273,75 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 		}
 	})
 
-	// Dashboard routes
-	r.GET("/dashboard", func(c *gin.Context) {
+	// Login routes
+	r.GET("/login", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		c.String(200, getLoginHTML())
+	})
+
+	r.GET("/auth/callback", func(c *gin.Context) {
+		code := c.Query("code")
+		if code == "" {
+			c.String(400, "No code provided")
+			return
+		}
+
+		// Exchange code for token with login.new
+		clientID := os.Getenv("LOGIN_CLIENT_ID")
+		clientSecret := os.Getenv("LOGIN_CLIENT_SECRET")
+		
+		data := url.Values{}
+		data.Set("grant_type", "authorization_code")
+		data.Set("code", code)
+		data.Set("client_id", clientID)
+		data.Set("client_secret", clientSecret)
+		data.Set("redirect_uri", os.Getenv("APP_DOMAIN") + "/auth/callback")
+
+		resp, err := http.PostForm("https://login.new/oauth/token", data)
+		if err != nil {
+			c.String(500, "Auth failed: " + err.Error())
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			c.String(500, "Auth failed")
+			return
+		}
+
+		// Create session
+		token := generateToken()
+		sessions[token] = true
+		c.SetCookie("auth_token", token, 86400*7, "/", "", true, true)
+		c.Redirect(302, "/dashboard")
+	})
+
+	r.GET("/logout", func(c *gin.Context) {
+		token, _ := c.Cookie("auth_token")
+		delete(sessions, token)
+		c.SetCookie("auth_token", "", -1, "/", "", true, true)
+		c.Redirect(302, "/login")
+	})
+
+	// Dashboard routes (protected)
+	r.GET("/dashboard", authMiddleware(), func(c *gin.Context) {
 		c.Header("Content-Type", "text/html; charset=utf-8")
 		c.String(200, getDashboardHTML())
 	})
 
-	r.GET("/api/addresses", func(c *gin.Context) {
+	r.GET("/api/addresses", authMiddleware(), func(c *gin.Context) {
 		var addresses []db.Address
 		db.DB.Order("created_at DESC").Find(&addresses)
 		c.JSON(200, addresses)
 	})
 
-	r.GET("/api/emails/:addressId", func(c *gin.Context) {
+	r.GET("/api/emails/:addressId", authMiddleware(), func(c *gin.Context) {
 		var emails []db.Email
 		db.DB.Where("address_id = ?", c.Param("addressId")).Order("id DESC").Find(&emails)
 		c.JSON(200, emails)
 	})
 
-	r.POST("/api/addresses", func(c *gin.Context) {
+	r.POST("/api/addresses", authMiddleware(), func(c *gin.Context) {
 		var req struct {
 			Name     string `json:"name"`
 			Duration int    `json:"duration"` // in hours
@@ -295,7 +372,7 @@ i'll post emails in this thread :arrow_down:`, durationText, address, os.Getenv(
 		c.JSON(200, address)
 	})
 
-	r.DELETE("/api/addresses/:id", func(c *gin.Context) {
+	r.DELETE("/api/addresses/:id", authMiddleware(), func(c *gin.Context) {
 		var address db.Address
 		if err := db.DB.Where("id = ?", c.Param("id")).First(&address).Error; err != nil {
 			c.JSON(404, gin.H{"error": "Address not found"})
@@ -822,6 +899,169 @@ func getDashboardHTML() string {
             loadStats();
         }, 30000);
     </script>
+</body>
+</html>`
+}
+
+func getLoginHTML() string {
+	clientID := os.Getenv("LOGIN_CLIENT_ID")
+	redirectURI := os.Getenv("APP_DOMAIN") + "/auth/callback"
+	authURL := fmt.Sprintf("https://login.new/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email", clientID, url.QueryEscape(redirectURI))
+	
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RMail</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: rgba(22, 33, 62, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .login-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .feature-list li {
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.9rem;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">📧</div>
+            <h1>RMail Dashboard</h1>
+            <p class="subtitle">Secure access to your temporary email addresses</p>
+            
+            <a href="` + authURL + `" class="login-btn">
+                🔐 Sign in with login.new
+            </a>
+
+            <ul class="feature-list">
+                <li>Create temporary email addresses</li>
+                <li>Manage multiple addresses</li>
+                <li>Custom durations and names</li>
+                <li>Real-time email notifications</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            Secured with login.new
+        </div>
+    </div>
 </body>
 </html>`
 }
