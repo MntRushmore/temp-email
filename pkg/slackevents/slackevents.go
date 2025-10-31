@@ -180,7 +180,17 @@ func Start() {
 						User:      ev.User,
 					}
 
-					db.DB.Create(&email)
+					result := db.DB.Create(&email)
+					if result.Error != nil {
+						log.Printf("ERROR: Failed to create address %s for user %s: %v", address, ev.User, result.Error)
+						Client.PostMessage(
+							ev.Channel,
+							slack.MsgOptionText(fmt.Sprintf("uh oh! something went wrong creating that address. please try again or contact the admin. (error: database insert failed)"), false),
+							slack.MsgOptionTS(ev.TimeStamp),
+						)
+						return
+					}
+					log.Printf("SUCCESS: Created address %s for user %s (expires: %s)", address, ev.User, email.ExpiresAt.Format(time.RFC3339))
 				} else if ev.SubType == "" && topLevelMessage(ev) && strings.HasPrefix(strings.ToLower(ev.Text), "gib ") {
 					Client.PostMessage(ev.Channel, slack.MsgOptionText(fmt.Sprintf("unfortunately i am unable to _%s_. maybe try _\"gib email\"_?", strings.ToLower(ev.Text)), false), slack.MsgOptionTS(ev.TimeStamp))
 				} else if (ev.SubType == "message_deleted" || (ev.SubType == "message_changed" && ev.Message.SubType == "tombstone")) && topLevelMessage(ev) {
@@ -447,6 +457,38 @@ func Start() {
 
 			c.String(200, "Something went wrong: this message has no content :(")
 		}
+	})
+
+	// Debug endpoint to check if address exists
+	r.GET("/api/check/:addressId", func(c *gin.Context) {
+		addressId := c.Param("addressId")
+		var address db.Address
+		tx := db.DB.Where("id = ? AND expires_at > NOW()", addressId).First(&address)
+		
+		if tx.Error == gorm.ErrRecordNotFound {
+			c.JSON(404, gin.H{
+				"found": false,
+				"error": "address not found or expired",
+				"id": addressId,
+			})
+			return
+		} else if tx.Error != nil {
+			c.JSON(500, gin.H{
+				"found": false,
+				"error": tx.Error.Error(),
+				"id": addressId,
+			})
+			return
+		}
+		
+		c.JSON(200, gin.H{
+			"found": true,
+			"id": address.ID,
+			"created_at": address.CreatedAt,
+			"expires_at": address.ExpiresAt,
+			"user": address.User,
+			"is_active": address.ExpiresAt.After(time.Now()),
+		})
 	})
 
 	log.Println("Starting up HTTP server...")

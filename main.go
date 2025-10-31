@@ -53,11 +53,14 @@ func (s *Session) Data(r io.Reader) error {
 	var address db.Address
 	tx := db.DB.Where("id = ? AND expires_at > NOW()", split[0]).First(&address)
 	if tx.Error == gorm.ErrRecordNotFound {
+		log.Printf("REJECT: Address not found or expired: %s (from: %s)", split[0], s.FromAddr)
 		return errors.New("address not found")
 	} else if tx.Error != nil {
-		log.Println(tx.Error)
+		log.Printf("ERROR: Database query failed for address %s: %v", split[0], tx.Error)
 		return nil
 	}
+	
+	log.Printf("ACCEPT: Email received for %s from %s", s.ToAddr, s.FromAddr)
 
 	rawEmail, err := io.ReadAll(r)
 	if err != nil {
