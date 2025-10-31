@@ -394,6 +394,40 @@ func Start() {
 		}
 
 		db.DB.Create(&address)
+
+		// Send Slack notification
+		durationText := fmt.Sprintf("%d-hour", duration)
+		if duration >= 24 {
+			days := duration / 24
+			if days == 1 {
+				durationText = "24-hour"
+			} else {
+				durationText = fmt.Sprintf("%d-day", days)
+			}
+		}
+
+		Client.PostMessage(
+			os.Getenv("SLACK_CHANNEL"),
+			slack.MsgOptionText("Admin created email address", false),
+			slack.MsgOptionBlocks(
+				slack.NewSectionBlock(
+					slack.NewTextBlockObject(
+						slack.MarkdownType,
+						fmt.Sprintf("*👤 Admin Action*\n\nCreated email address via dashboard\n\n`%s@%s`\n\n*Duration:* %s\n*Expires:* %s", 
+							address.ID, 
+							os.Getenv("DOMAIN"),
+							durationText,
+							address.ExpiresAt.Format("Jan 2, 3:04 PM"),
+						),
+						false,
+						false,
+					),
+					nil,
+					nil,
+				),
+			),
+		)
+
 		c.JSON(200, address)
 	})
 
@@ -406,6 +440,28 @@ func Start() {
 
 		address.ExpiresAt = time.Now()
 		db.DB.Save(&address)
+
+		// Send Slack notification
+		Client.PostMessage(
+			os.Getenv("SLACK_CHANNEL"),
+			slack.MsgOptionText("Admin deactivated email address", false),
+			slack.MsgOptionBlocks(
+				slack.NewSectionBlock(
+					slack.NewTextBlockObject(
+						slack.MarkdownType,
+						fmt.Sprintf("*👤 Admin Action*\n\nDeactivated email address via dashboard\n\n`%s@%s`", 
+							address.ID, 
+							os.Getenv("DOMAIN"),
+						),
+						false,
+						false,
+					),
+					nil,
+					nil,
+				),
+			),
+		)
+
 		c.JSON(200, gin.H{"success": true})
 	})
 
