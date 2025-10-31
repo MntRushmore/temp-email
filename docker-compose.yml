@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   main:
     build:
@@ -12,7 +14,16 @@ services:
       GIN_MODE: release
     depends_on:
       - db
+    command: >
+      sh -c "
+      until pg_isready -h db -U postgres; do
+        echo 'Waiting for Postgres...'
+        sleep 2
+      done
+      && ./temp-email
+      "
     restart: unless-stopped
+
   db:
     image: postgres:alpine
     environment:
@@ -20,7 +31,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: temp_email
     volumes:
-      - "db_volume:/var/lib/postgresql/data"
+      - db_volume:/var/lib/postgresql/data
     restart: unless-stopped
+
 volumes:
   db_volume:
