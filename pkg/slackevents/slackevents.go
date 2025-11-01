@@ -440,6 +440,10 @@ func Start() {
 		c.JSON(200, gin.H{"success": true})
 	})
 
+	// Mailgun webhook endpoints (MUST be before /:email catch-all route)
+	r.POST("/webhook/mailgun", mailgun.HandleWebhook)
+	r.POST("/webhook/mailgun/raw", mailgun.HandleRawWebhook)
+
 	r.GET("/:email", func(c *gin.Context) {
 		var rawEmail db.Email
 		tx := db.DB.Where("id = ?", c.Param("email")).First(&rawEmail)
@@ -504,10 +508,6 @@ func Start() {
 			"is_active": address.ExpiresAt.After(time.Now()),
 		})
 	})
-
-	// Mailgun webhook endpoints
-	r.POST("/webhook/mailgun", mailgun.HandleWebhook)
-	r.POST("/webhook/mailgun/raw", mailgun.HandleRawWebhook)
 
 	log.Println("Starting up HTTP server...")
 
