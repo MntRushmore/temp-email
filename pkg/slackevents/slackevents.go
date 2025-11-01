@@ -354,7 +354,17 @@ func Start() {
 			User:      "dashboard",
 		}
 
-		db.DB.Create(&address)
+		result := db.DB.Create(&address)
+		if result.Error != nil {
+			log.Printf("ERROR: Failed to create address %s via dashboard: %v", address.ID, result.Error)
+			c.JSON(500, gin.H{
+				"error": "Failed to create address in database",
+				"details": result.Error.Error(),
+			})
+			return
+		}
+		
+		log.Printf("SUCCESS: Created address %s via dashboard (expires: %s)", address.ID, address.ExpiresAt.Format(time.RFC3339))
 
 		// Send Slack notification
 		durationText := fmt.Sprintf("%d-hour", duration)
