@@ -15,6 +15,7 @@ import (
 
 	"github.com/DusanKasan/parsemail"
 	"github.com/cjdenio/temp-email/pkg/db"
+	"github.com/cjdenio/temp-email/pkg/mailgun"
 	"github.com/cjdenio/temp-email/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/slack-go/slack"
@@ -500,6 +501,10 @@ func Start() {
 			"is_active": address.ExpiresAt.After(time.Now()),
 		})
 	})
+
+	// Mailgun webhook endpoints
+	r.POST("/webhook/mailgun", mailgun.HandleWebhook)
+	r.POST("/webhook/mailgun/raw", mailgun.HandleRawWebhook)
 
 	log.Println("Starting up HTTP server...")
 
