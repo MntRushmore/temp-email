@@ -747,10 +747,17 @@ func getDashboardHTML() string {
             border-radius: 8px;
             padding: 1.25rem;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .address-card:hover {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+        }
+
+        .address-card.expanded {
+            background: var(--surface);
+            cursor: default;
         }
 
         .address-header {
@@ -861,6 +868,128 @@ func getDashboardHTML() string {
         .empty-state p {
             font-size: 0.9375rem;
         }
+
+        .emails-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .emails-section h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .email-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .email-item:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .email-from {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        }
+
+        .email-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .email-subject {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        .email-preview {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-height: 3rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .email-actions {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-view {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-view:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .no-emails {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .email-count {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.125rem 0.5rem;
+            border-radius: 12px;
+            margin-left: 0.5rem;
+        }
+
+        .toggle-emails {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .toggle-emails:hover {
+            background: var(--surface-hover);
+        }
     </style>
 </head>
 <body>
@@ -962,7 +1091,9 @@ func getDashboardHTML() string {
             }
             
             const now = new Date();
-            container.innerHTML = addresses.map((addr, i) => {
+            let html = '';
+            
+            for (const addr of addresses) {
                 const isActive = new Date(addr.ExpiresAt) > now;
                 const created = new Date(addr.CreatedAt).toLocaleString('en-US', { 
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -971,11 +1102,18 @@ func getDashboardHTML() string {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                 });
                 
-                return '<div class="address-card">' +
+                // Get email count
+                const emailRes = await fetch(API_BASE + '/api/emails/' + addr.ID);
+                const emails = await emailRes.json();
+                const emailCount = emails ? emails.length : 0;
+                
+                html += '<div class="address-card" id="addr-' + addr.ID + '">' +
                     '<div class="address-header">' +
-                        '<div class="address-email">' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + '</div>' +
+                        '<div class="address-email">' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + 
+                        (emailCount > 0 ? '<span class="email-count">' + emailCount + '</span>' : '') +
+                        '</div>' +
                         '<div class="address-actions">' +
-                            '<button class="btn-icon" onclick="deleteAddress(\'' + addr.ID + '\')" title="Delete">×</button>' +
+                            '<button class="btn-icon" onclick="event.stopPropagation(); deleteAddress(\'' + addr.ID + '\')" title="Delete">×</button>' +
                         '</div>' +
                     '</div>' +
                     '<div class="address-meta">' +
@@ -984,9 +1122,68 @@ func getDashboardHTML() string {
                         '</div>' +
                         '<div class="meta-item">Created ' + created + '</div>' +
                         '<div class="meta-item">Expires ' + expires + '</div>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
+                    '</div>';
+                
+                if (emailCount > 0) {
+                    html += '<button class="toggle-emails" onclick="toggleEmails(\'' + addr.ID + '\')">View ' + emailCount + ' Email' + (emailCount !== 1 ? 's' : '') + ' ▼</button>';
+                    html += '<div class="emails-section" id="emails-' + addr.ID + '" style="display: none;"></div>';
+                }
+                
+                html += '</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+
+        async function toggleEmails(addressId) {
+            const emailsSection = document.getElementById('emails-' + addressId);
+            const card = document.getElementById('addr-' + addressId);
+            
+            if (emailsSection.style.display === 'none') {
+                // Load and show emails
+                emailsSection.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading emails...</p></div>';
+                emailsSection.style.display = 'block';
+                card.classList.add('expanded');
+                
+                const res = await fetch(API_BASE + '/api/emails/' + addressId);
+                const emails = await res.json();
+                
+                if (emails && emails.length > 0) {
+                    let emailsHtml = '<h3>Received Emails</h3>';
+                    emails.forEach(email => {
+                        // Parse the email content to extract subject and preview
+                        const emailDate = new Date(email.CreatedAt).toLocaleString('en-US', { 
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        });
+                        
+                        emailsHtml += '<div class="email-item">' +
+                            '<div class="email-header">' +
+                                '<div class="email-time">' + emailDate + '</div>' +
+                            '</div>' +
+                            '<div class="email-actions">' +
+                                '<button class="btn-view" onclick="window.open(\'/' + email.ID + '\', \'_blank\')">View Full Email</button>' +
+                            '</div>' +
+                        '</div>';
+                    });
+                    emailsSection.innerHTML = emailsHtml;
+                } else {
+                    emailsSection.innerHTML = '<div class="no-emails">No emails received yet</div>';
+                }
+                
+                // Update button text
+                const btn = card.querySelector('.toggle-emails');
+                btn.textContent = 'Hide Emails ▲';
+            } else {
+                // Hide emails
+                emailsSection.style.display = 'none';
+                card.classList.remove('expanded');
+                
+                // Update button text
+                const btn = card.querySelector('.toggle-emails');
+                const match = btn.textContent.match(/\d+/);
+                const count = match ? parseInt(match[0]) : 0;
+                btn.textContent = 'View ' + count + ' Email' + (count !== 1 ? 's' : '') + ' ▼';
+            }
         }
 
         document.getElementById('createForm').addEventListener('submit', async (e) => {
