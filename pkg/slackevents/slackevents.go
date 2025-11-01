@@ -50,6 +50,9 @@ func topLevelMessage(ev *slackevents.MessageEvent) bool {
 
 func Start() {
 	Client = slack.New(os.Getenv("SLACK_TOKEN"))
+	
+	// Share Slack client with mailgun package to avoid import cycle
+	mailgun.SlackClient = Client
 
 	r := gin.Default()
 

@@ -16,7 +16,6 @@ import (
 	"github.com/DusanKasan/parsemail"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/cjdenio/temp-email/pkg/db"
-	"github.com/cjdenio/temp-email/pkg/slackevents"
 	"github.com/cjdenio/temp-email/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/slack-go/slack"
@@ -24,6 +23,8 @@ import (
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 )
+
+var SlackClient *slack.Client
 
 // VerifyWebhookSignature verifies the Mailgun webhook signature
 func VerifyWebhookSignature(timestamp, token, signature, signingKey string) bool {
@@ -155,8 +156,8 @@ func HandleWebhook(c *gin.Context) {
 	}
 	
 	// Post to Slack (only if address was created via Slack)
-	if address.Timestamp != "" {
-		_, _, err := slackevents.Client.PostMessage(
+	if address.Timestamp != "" && SlackClient != nil {
+		_, _, err := SlackClient.PostMessage(
 			os.Getenv("SLACK_CHANNEL"),
 			slack.MsgOptionDisableLinkUnfurl(),
 			slack.MsgOptionDisableMediaUnfurl(),
