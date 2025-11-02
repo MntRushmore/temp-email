@@ -63,12 +63,20 @@ func HandleWebhook(c *gin.Context) {
 	
 	// Extract email data
 	recipient := c.PostForm("recipient")
-	sender := c.PostForm("sender")
+	// Use "from" field which contains the From header (includes aliases)
+	// instead of "sender" which is the envelope sender (MAIL FROM)
+	from := c.PostForm("from")
+	if from == "" {
+		from = c.PostForm("From") // Try alternative capitalization
+	}
+	if from == "" {
+		from = c.PostForm("sender") // Fallback to envelope sender if From header not available
+	}
 	subject := c.PostForm("subject")
 	bodyPlain := c.PostForm("body-plain")
 	bodyHtml := c.PostForm("body-html")
 	
-	log.Printf("Mailgun webhook received: to=%s from=%s subject=%s", recipient, sender, subject)
+	log.Printf("Mailgun webhook received: to=%s from=%s subject=%s", recipient, from, subject)
 	
 	// Extract address ID from recipient (format: addressId@domain)
 	split := strings.Split(recipient, "@")
@@ -84,7 +92,7 @@ func HandleWebhook(c *gin.Context) {
 	var address db.Address
 	tx := db.DB.Where("id = ? AND expires_at > NOW()", addressId).First(&address)
 	if tx.Error == gorm.ErrRecordNotFound {
-		log.Printf("REJECT: Address not found or expired: %s (from: %s)", addressId, sender)
+		log.Printf("REJECT: Address not found or expired: %s (from: %s)", addressId, from)
 		c.JSON(200, gin.H{"status": "rejected", "reason": "address not found or expired"})
 		return
 	} else if tx.Error != nil {
@@ -93,14 +101,14 @@ func HandleWebhook(c *gin.Context) {
 		return
 	}
 	
-	log.Printf("ACCEPT: Email received for %s from %s", recipient, sender)
+	log.Printf("ACCEPT: Email received for %s from %s", recipient, from)
 	
 	// Create email content in proper MIME format so viewer can parse it
-	rawEmailContent := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=utf-8\r\n\r\n%s", sender, recipient, subject, bodyHtml)
+	rawEmailContent := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=utf-8\r\n\r\n%s", from, recipient, subject, bodyHtml)
 	
 	// If no HTML body, use plain text
 	if bodyHtml == "" {
-		rawEmailContent = fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s", sender, recipient, subject, bodyPlain)
+		rawEmailContent = fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s", from, recipient, subject, bodyPlain)
 	}
 	
 	// Save email to database
@@ -169,7 +177,7 @@ func HandleWebhook(c *gin.Context) {
 			slack.MsgOptionTS(address.Timestamp),
 			slack.MsgOptionBlocks(
 				slack.NewSectionBlock(
-					slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("message from `%s`\n%s", sender, util.SanitizeInput(subjectText)), false, false),
+					slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("message from `%s`\n%s", from, util.SanitizeInput(subjectText)), false, false),
 					nil,
 					nil,
 				),
