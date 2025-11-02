@@ -327,8 +327,17 @@ func Start() {
 
 	r.GET("/api/emails/:addressId", authMiddleware(), func(c *gin.Context) {
 		var emails []db.Email
-		db.DB.Where("address_id = ?", c.Param("addressId")).Order("id DESC").Find(&emails)
+		db.DB.Where("address_id = ?", c.Param("addressId")).Order("created_at DESC").Find(&emails)
 		c.JSON(200, emails)
+	})
+
+	r.GET("/api/email/:emailId", authMiddleware(), func(c *gin.Context) {
+		var email db.Email
+		if err := db.DB.Where("id = ?", c.Param("emailId")).First(&email).Error; err != nil {
+			c.JSON(404, gin.H{"error": "Email not found"})
+			return
+		}
+		c.JSON(200, email)
 	})
 
 	r.POST("/api/addresses", authMiddleware(), func(c *gin.Context) {
@@ -370,38 +379,8 @@ func Start() {
 		
 		log.Printf("SUCCESS: Created address %s via dashboard (expires: %s)", address.ID, address.ExpiresAt.Format(time.RFC3339))
 
-		// Send Slack notification
-		durationText := fmt.Sprintf("%d-hour", duration)
-		if duration >= 24 {
-			days := duration / 24
-			if days == 1 {
-				durationText = "24-hour"
-			} else {
-				durationText = fmt.Sprintf("%d-day", days)
-			}
-		}
-
-		Client.PostMessage(
-			os.Getenv("SLACK_CHANNEL"),
-			slack.MsgOptionText("Admin created email address", false),
-			slack.MsgOptionBlocks(
-				slack.NewSectionBlock(
-					slack.NewTextBlockObject(
-						slack.MarkdownType,
-						fmt.Sprintf("*👤 Admin Action*\n\nCreated email address via dashboard\n\n`%s@%s`\n\n*Duration:* %s\n*Expires:* %s", 
-							address.ID, 
-							os.Getenv("DOMAIN"),
-							durationText,
-							address.ExpiresAt.Format("Jan 2, 3:04 PM"),
-						),
-						false,
-						false,
-					),
-					nil,
-					nil,
-				),
-			),
-		)
+		// Dashboard addresses do NOT send to Slack
+		// Admin can view emails directly in the dashboard
 
 		c.JSON(200, address)
 	})
@@ -416,26 +395,28 @@ func Start() {
 		address.ExpiresAt = time.Now()
 		db.DB.Save(&address)
 
-		// Send Slack notification
-		Client.PostMessage(
-			os.Getenv("SLACK_CHANNEL"),
-			slack.MsgOptionText("Admin deactivated email address", false),
-			slack.MsgOptionBlocks(
-				slack.NewSectionBlock(
-					slack.NewTextBlockObject(
-						slack.MarkdownType,
-						fmt.Sprintf("*👤 Admin Action*\n\nDeactivated email address via dashboard\n\n`%s@%s`", 
-							address.ID, 
-							os.Getenv("DOMAIN"),
+		// Only send Slack notification if address was created via Slack (has timestamp)
+		if address.Timestamp != "" {
+			Client.PostMessage(
+				os.Getenv("SLACK_CHANNEL"),
+				slack.MsgOptionText("Admin deactivated email address", false),
+				slack.MsgOptionBlocks(
+					slack.NewSectionBlock(
+						slack.NewTextBlockObject(
+							slack.MarkdownType,
+							fmt.Sprintf("*👤 Admin Action*\n\nDeactivated email address via dashboard\n\n`%s@%s`", 
+								address.ID, 
+								os.Getenv("DOMAIN"),
+							),
+							false,
+							false,
 						),
-						false,
-						false,
+						nil,
+						nil,
 					),
-					nil,
-					nil,
 				),
-			),
-		)
+			)
+		}
 
 		c.JSON(200, gin.H{"success": true})
 	})
@@ -1008,6 +989,262 @@ func getDashboardHTML() string {
         .toggle-emails:hover {
             background: var(--surface-hover);
         }
+
+        /* Full-Screen Address Modal */
+        .address-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-secondary);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .address-modal.active {
+            display: block;
+        }
+
+        .address-modal-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .address-modal-title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .address-modal-email {
+            font-size: 1.25rem;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            color: var(--text);
+            word-break: break-all;
+            margin-bottom: 0.5rem;
+        }
+
+        .address-modal-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .address-modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .address-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .address-modal-close:hover {
+            background: var(--surface-hover);
+        }
+
+        .address-modal-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .emails-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .email-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .email-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .email-card-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 1rem;
+        }
+
+        .email-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .email-card-from {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .email-card-time {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .email-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-view-email {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-view-email:hover {
+            background: var(--primary-hover);
+        }
+
+        .email-card-preview {
+            padding: 1.25rem;
+        }
+
+        .email-preview-iframe {
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            background: white;
+            min-height: 300px;
+            display: none;
+        }
+
+        .email-preview-iframe.visible {
+            display: block;
+        }
+
+        .email-list-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .email-list-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .email-list-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .email-list-from {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .email-list-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .email-list-subject {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .empty-inbox {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-inbox-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .btn-refresh {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-refresh:hover {
+            background: var(--surface-hover);
+        }
+
+        .btn-refresh.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .refresh-icon {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .btn-refresh.loading .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        iframe {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            min-height: 400px;
+        }
     </style>
 </head>
 <body>
@@ -1074,8 +1311,33 @@ func getDashboardHTML() string {
         </div>
     </div>
 
+    <!-- Full-Screen Address Modal -->
+    <div class="address-modal" id="addressModal">
+        <div class="address-modal-header">
+            <div class="address-modal-title">
+                <div class="address-modal-email" id="modalEmail"></div>
+                <div class="address-modal-meta" id="modalMeta"></div>
+            </div>
+            <div class="address-modal-actions">
+                <button class="btn-refresh" onclick="reloadInbox()" id="refreshBtn">
+                    <span class="refresh-icon">↻</span> Reload
+                </button>
+                <button class="address-modal-close" onclick="closeAddressModal()">✕ Close</button>
+            </div>
+        </div>
+        <div class="address-modal-content">
+            <div class="emails-list" id="modalEmailsList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading emails...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '';
+        let currentAddressId = null;
 
         async function loadStats() {
             const res = await fetch(API_BASE + '/api/addresses');
@@ -1125,7 +1387,7 @@ func getDashboardHTML() string {
                 const emails = await emailRes.json();
                 const emailCount = emails ? emails.length : 0;
                 
-                html += '<div class="address-card" id="addr-' + addr.ID + '">' +
+                html += '<div class="address-card" id="addr-' + addr.ID + '" onclick="openAddressModal(\'' + addr.ID + '\', \'' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + '\', ' + isActive + ', \'' + created + '\', \'' + expires + '\')" style="cursor: pointer;">' +
                     '<div class="address-header">' +
                         '<div class="address-email">' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + 
                         (emailCount > 0 ? '<span class="email-count">' + emailCount + '</span>' : '') +
@@ -1140,69 +1402,105 @@ func getDashboardHTML() string {
                         '</div>' +
                         '<div class="meta-item">Created ' + created + '</div>' +
                         '<div class="meta-item">Expires ' + expires + '</div>' +
-                    '</div>';
-                
-                if (emailCount > 0) {
-                    html += '<button class="toggle-emails" onclick="toggleEmails(\'' + addr.ID + '\')">View ' + emailCount + ' Email' + (emailCount !== 1 ? 's' : '') + ' ▼</button>';
-                    html += '<div class="emails-section" id="emails-' + addr.ID + '" style="display: none;"></div>';
-                }
-                
-                html += '</div>';
+                    '</div>' +
+                '</div>';
             }
             
             container.innerHTML = html;
         }
 
-        async function toggleEmails(addressId) {
-            const emailsSection = document.getElementById('emails-' + addressId);
-            const card = document.getElementById('addr-' + addressId);
+        async function openAddressModal(addressId, email, isActive, created, expires) {
+            currentAddressId = addressId;
             
-            if (emailsSection.style.display === 'none') {
-                // Load and show emails
-                emailsSection.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading emails...</p></div>';
-                emailsSection.style.display = 'block';
-                card.classList.add('expanded');
+            document.getElementById('modalEmail').textContent = email;
+            document.getElementById('modalMeta').innerHTML = 
+                '<span class="badge ' + (isActive ? 'badge-active' : 'badge-expired') + '">' + (isActive ? 'Active' : 'Expired') + '</span>' +
+                '<span>Created ' + created + '</span>' +
+                '<span>Expires ' + expires + '</span>';
+            
+            document.getElementById('addressModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            await loadModalEmails(addressId);
+        }
+
+        function closeAddressModal() {
+            document.getElementById('addressModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            currentAddressId = null;
+        }
+
+        async function reloadInbox() {
+            if (!currentAddressId) return;
+            
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('loading');
+            
+            await loadModalEmails(currentAddressId);
+            
+            btn.classList.remove('loading');
+        }
+
+        async function loadModalEmails(addressId) {
+            const container = document.getElementById('modalEmailsList');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading emails...</p></div>';
+            
+            const res = await fetch(API_BASE + '/api/emails/' + addressId);
+            const emails = await res.json();
+            
+            if (!emails || emails.length === 0) {
+                container.innerHTML = '<div class="empty-inbox"><div class="empty-inbox-icon">📭</div><p>No emails received yet</p></div>';
+                return;
+            }
+            
+            let html = '';
+            for (const email of emails) {
+                const emailDate = new Date(email.CreatedAt).toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                });
                 
-                const res = await fetch(API_BASE + '/api/emails/' + addressId);
-                const emails = await res.json();
-                
-                if (emails && emails.length > 0) {
-                    let emailsHtml = '<h3>Received Emails</h3>';
-                    emails.forEach(email => {
-                        // Parse the email content to extract subject and preview
-                        const emailDate = new Date(email.CreatedAt).toLocaleString('en-US', { 
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                        });
-                        
-                        emailsHtml += '<div class="email-item">' +
-                            '<div class="email-header">' +
-                                '<div class="email-time">' + emailDate + '</div>' +
-                            '</div>' +
-                            '<div class="email-actions">' +
-                                '<button class="btn-view" onclick="window.open(\'/' + email.ID + '\', \'_blank\')">View Full Email</button>' +
-                            '</div>' +
-                        '</div>';
-                    });
-                    emailsSection.innerHTML = emailsHtml;
-                } else {
-                    emailsSection.innerHTML = '<div class="no-emails">No emails received yet</div>';
-                }
-                
-                // Update button text
-                const btn = card.querySelector('.toggle-emails');
-                btn.textContent = 'Hide Emails ▲';
+                html += '<div class="email-card">' +
+                    '<div class="email-card-header">' +
+                        '<div class="email-card-info">' +
+                            '<div class="email-card-from">Email ID: ' + email.ID + '</div>' +
+                            '<div class="email-card-time">' + emailDate + '</div>' +
+                        '</div>' +
+                        '<div class="email-card-actions">' +
+                            '<button class="btn-view-email" onclick="toggleEmailPreview(\'' + email.ID + '\')">View</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="email-card-preview">' +
+                        '<iframe id="email-preview-' + email.ID + '" class="email-preview-iframe" src="/' + email.ID + '"></iframe>' +
+                    '</div>' +
+                '</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function toggleEmailPreview(emailId) {
+            const iframe = document.getElementById('email-preview-' + emailId);
+            if (iframe.classList.contains('visible')) {
+                iframe.classList.remove('visible');
             } else {
-                // Hide emails
-                emailsSection.style.display = 'none';
-                card.classList.remove('expanded');
-                
-                // Update button text
-                const btn = card.querySelector('.toggle-emails');
-                const match = btn.textContent.match(/\d+/);
-                const count = match ? parseInt(match[0]) : 0;
-                btn.textContent = 'View ' + count + ' Email' + (count !== 1 ? 's' : '') + ' ▼';
+                iframe.classList.add('visible');
+                // Set height after content loads
+                iframe.onload = function() {
+                    try {
+                        iframe.style.height = Math.max(300, iframe.contentWindow.document.body.scrollHeight + 20) + 'px';
+                    } catch (e) {
+                        iframe.style.height = '500px';
+                    }
+                };
             }
         }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAddressModal();
+            }
+        });
 
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
