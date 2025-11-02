@@ -95,8 +95,13 @@ func HandleWebhook(c *gin.Context) {
 	
 	log.Printf("ACCEPT: Email received for %s from %s", recipient, sender)
 	
-	// Create raw email content for storage (simplified format)
-	rawEmailContent := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", sender, recipient, subject, bodyPlain)
+	// Create email content in proper MIME format so viewer can parse it
+	rawEmailContent := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/html; charset=utf-8\r\n\r\n%s", sender, recipient, subject, bodyHtml)
+	
+	// If no HTML body, use plain text
+	if bodyHtml == "" {
+		rawEmailContent = fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s", sender, recipient, subject, bodyPlain)
+	}
 	
 	// Save email to database
 	savedEmail := &db.Email{
