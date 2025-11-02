@@ -1193,7 +1193,6 @@ func getDashboardHTML() string {
             background: var(--surface-hover);
         }
 
-<<<<<<< HEAD
         .modal-body {
             padding: 8px 24px 24px;
         }
@@ -1341,263 +1340,6 @@ func getDashboardHTML() string {
         }
 
 
-=======
-        /* Full-Screen Address Modal */
-        .address-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-secondary);
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .address-modal.active {
-            display: block;
-        }
-
-        .address-modal-header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .address-modal-title {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .address-modal-email {
-            font-size: 1.25rem;
-            font-weight: 600;
-            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-            color: var(--text);
-            word-break: break-all;
-            margin-bottom: 0.5rem;
-        }
-
-        .address-modal-meta {
-            display: flex;
-            gap: 1rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            flex-wrap: wrap;
-        }
-
-        .address-modal-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .address-modal-close {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .address-modal-close:hover {
-            background: var(--surface-hover);
-        }
-
-        .address-modal-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .emails-list {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .email-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.2s;
-        }
-
-        .email-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .email-card-header {
-            padding: 1.25rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            gap: 1rem;
-        }
-
-        .email-card-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .email-card-from {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 0.25rem;
-        }
-
-        .email-card-time {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-        }
-
-        .email-card-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-view-email {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-size: 0.8125rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .btn-view-email:hover {
-            background: var(--primary-hover);
-        }
-
-        .email-card-preview {
-            padding: 1.25rem;
-        }
-
-        .email-preview-iframe {
-            width: 100%;
-            border: none;
-            border-radius: 4px;
-            background: white;
-            min-height: 300px;
-            display: none;
-        }
-
-        .email-preview-iframe.visible {
-            display: block;
-        }
-
-        .email-list-item {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .email-list-item:hover {
-            border-color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .email-list-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 0.5rem;
-        }
-
-        .email-list-from {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .email-list-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .email-list-subject {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.25rem;
-        }
-
-        .empty-inbox {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .empty-inbox-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.3;
-        }
-
-        .btn-refresh {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-refresh:hover {
-            background: var(--surface-hover);
-        }
-
-        .btn-refresh.loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .refresh-icon {
-            display: inline-block;
-            transition: transform 0.3s;
-        }
-
-        .btn-refresh.loading .refresh-icon {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        iframe {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            min-height: 400px;
-        }
->>>>>>> origin/master
     </style>
 </head>
 <body>
@@ -1747,13 +1489,9 @@ func getDashboardHTML() string {
 
     <script>
         const API_BASE = '';
-<<<<<<< HEAD
         let addresses = [];
         let currentFilter = 'all';
         let selectedAddressId = null;
-=======
-        let currentAddressId = null;
->>>>>>> origin/master
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -1864,7 +1602,6 @@ func getDashboardHTML() string {
             let html = '';
             for (const addr of filteredAddresses) {
                 const isActive = new Date(addr.ExpiresAt) > now;
-<<<<<<< HEAD
                 const emailCount = emailCounts[addr.ID] || 0;
                 const created = formatDate(addr.CreatedAt);
                 const initial = addr.ID.charAt(0).toUpperCase();
@@ -1875,24 +1612,6 @@ func getDashboardHTML() string {
                         '<div class="email-header-row">' +
                             '<span class="email-address">' + addr.ID + '</span>' +
                             '<span class="email-time">' + created + '</span>' +
-=======
-                const created = new Date(addr.CreatedAt).toLocaleString('en-US', { 
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                });
-                const expires = new Date(addr.ExpiresAt).toLocaleString('en-US', { 
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                });
-                
-                // Get email count
-                const emailRes = await fetch(API_BASE + '/api/emails/' + addr.ID);
-                const emails = await emailRes.json();
-                const emailCount = emails ? emails.length : 0;
-                
-                html += '<div class="address-card" id="addr-' + addr.ID + '" onclick="openAddressModal(\'' + addr.ID + '\', \'' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + '\', ' + isActive + ', \'' + created + '\', \'' + expires + '\')" style="cursor: pointer;">' +
-                    '<div class="address-header">' +
-                        '<div class="address-email">' + addr.ID + '@' + window.location.hostname.replace('mail.', '') + 
-                        (emailCount > 0 ? '<span class="email-count">' + emailCount + '</span>' : '') +
->>>>>>> origin/master
                         '</div>' +
                         '<div class="email-meta">' +
                             '<span class="status-badge ' + (isActive ? 'active' : 'expired') + '">' + (isActive ? 'Active' : 'Expired') + '</span>' +
@@ -1900,23 +1619,12 @@ func getDashboardHTML() string {
                             (emailCount > 0 ? '<span class="email-count">' + emailCount + '</span>' : '') +
                         '</div>' +
                     '</div>' +
-<<<<<<< HEAD
-=======
-                    '<div class="address-meta">' +
-                        '<div class="meta-item">' +
-                            '<span class="badge ' + (isActive ? 'badge-active' : 'badge-expired') + '">' + (isActive ? 'Active' : 'Expired') + '</span>' +
-                        '</div>' +
-                        '<div class="meta-item">Created ' + created + '</div>' +
-                        '<div class="meta-item">Expires ' + expires + '</div>' +
-                    '</div>' +
->>>>>>> origin/master
                 '</div>';
             }
 
             container.innerHTML = html;
         }
 
-<<<<<<< HEAD
         // Select Address and Load Preview
         async function selectAddress(addressId) {
             selectedAddressId = addressId;
@@ -2032,115 +1740,6 @@ func getDashboardHTML() string {
                 selectedAddressId = null;
                 document.getElementById('emailPreview').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Select an address</div><div class="empty-text">Choose an address from the list to view emails</div></div>';
                 
-=======
-        async function openAddressModal(addressId, email, isActive, created, expires) {
-            currentAddressId = addressId;
-            
-            document.getElementById('modalEmail').textContent = email;
-            document.getElementById('modalMeta').innerHTML = 
-                '<span class="badge ' + (isActive ? 'badge-active' : 'badge-expired') + '">' + (isActive ? 'Active' : 'Expired') + '</span>' +
-                '<span>Created ' + created + '</span>' +
-                '<span>Expires ' + expires + '</span>';
-            
-            document.getElementById('addressModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            
-            await loadModalEmails(addressId);
-        }
-
-        function closeAddressModal() {
-            document.getElementById('addressModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-            currentAddressId = null;
-        }
-
-        async function reloadInbox() {
-            if (!currentAddressId) return;
-            
-            const btn = document.getElementById('refreshBtn');
-            btn.classList.add('loading');
-            
-            await loadModalEmails(currentAddressId);
-            
-            btn.classList.remove('loading');
-        }
-
-        async function loadModalEmails(addressId) {
-            const container = document.getElementById('modalEmailsList');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading emails...</p></div>';
-            
-            const res = await fetch(API_BASE + '/api/emails/' + addressId);
-            const emails = await res.json();
-            
-            if (!emails || emails.length === 0) {
-                container.innerHTML = '<div class="empty-inbox"><div class="empty-inbox-icon">📭</div><p>No emails received yet</p></div>';
-                return;
-            }
-            
-            let html = '';
-            for (const email of emails) {
-                const emailDate = new Date(email.CreatedAt).toLocaleString('en-US', { 
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                });
-                
-                html += '<div class="email-card">' +
-                    '<div class="email-card-header">' +
-                        '<div class="email-card-info">' +
-                            '<div class="email-card-from">Email ID: ' + email.ID + '</div>' +
-                            '<div class="email-card-time">' + emailDate + '</div>' +
-                        '</div>' +
-                        '<div class="email-card-actions">' +
-                            '<button class="btn-view-email" onclick="toggleEmailPreview(\'' + email.ID + '\')">View</button>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="email-card-preview">' +
-                        '<iframe id="email-preview-' + email.ID + '" class="email-preview-iframe" src="/' + email.ID + '"></iframe>' +
-                    '</div>' +
-                '</div>';
-            }
-            
-            container.innerHTML = html;
-        }
-
-        function toggleEmailPreview(emailId) {
-            const iframe = document.getElementById('email-preview-' + emailId);
-            if (iframe.classList.contains('visible')) {
-                iframe.classList.remove('visible');
-            } else {
-                iframe.classList.add('visible');
-                // Set height after content loads
-                iframe.onload = function() {
-                    try {
-                        iframe.style.height = Math.max(300, iframe.contentWindow.document.body.scrollHeight + 20) + 'px';
-                    } catch (e) {
-                        iframe.style.height = '500px';
-                    }
-                };
-            }
-        }
-
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeAddressModal();
-            }
-        });
-
-        document.getElementById('createForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const duration = parseInt(document.getElementById('duration').value);
-            
-            const res = await fetch(API_BASE + '/api/addresses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, duration })
-            });
-            
-            if (res.ok) {
-                document.getElementById('name').value = '';
->>>>>>> origin/master
                 await loadAddresses();
             } catch (error) {
                 console.error('Error deleting address:', error);
